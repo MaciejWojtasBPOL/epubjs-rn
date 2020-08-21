@@ -1,22 +1,18 @@
-import React, { Component } from "react"
+import React, { Component } from 'react';
 
 import {
   StyleSheet,
   View,
   ActivityIndicator,
-  Dimensions,
-  Platform,
-  AppState,
-  TouchableOpacity
-} from "react-native";
+  TouchableOpacity,
+} from 'react-native';
+
+import bridge from './scripts/bridge';
+import epubjs from './scripts/epubjs';
 
 import { WebView } from 'react-native-webview';
 
-import EventEmitter from 'event-emitter'
-
-import AsyncStorage from '@react-native-community/async-storage';
-
-const URL = require("epubjs/libs/url/url-polyfill.js");
+import EventEmitter from 'event-emitter';
 
 const EMBEDDED_HTML = `
 <!DOCTYPE html>
@@ -25,9 +21,9 @@ const EMBEDDED_HTML = `
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no, shrink-to-fit=no, viewport-fit=cover">
   <title>epubjs</title>
-  <script>${process.env.POLYFILL}</script>
-  <script>${process.env.EPUBJS}</script>
-  <script>${process.env.BRIDGE}</script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/js-polyfills/0.1.42/polyfill.min.js" integrity="sha512-SOzvBoYl4GRiy3T0aeQQy3iXz/CPh80Z3b95hkA/Jv2/p2ClMKbG5uvkD7cwJlGnBafpnJwswjbNKThMlTsGFg==" crossorigin="anonymous"></script>  
+  <script>${epubjs}</script>
+  <script>${bridge}</script>
   <style>
     body {
       margin: 0;
@@ -49,14 +45,15 @@ const EMBEDDED_HTML = `
 `;
 
 class Rendition extends Component {
-
   constructor(props) {
     super(props);
 
     this.state = {
       loaded: false,
-    }
-
+      bridgeAssetPath: '',
+      polyfillAssetPath: '',
+      epubjsAssetPath: '',
+    };
   }
 
   componentDidMount() {
@@ -87,7 +84,7 @@ class Rendition extends Component {
     }
 
     if (prevProps.flow !== this.props.flow) {
-      this.flow(this.props.flow || "paginated");
+      this.flow(this.props.flow || 'paginated');
     }
 
     if (prevProps.themes !== this.props.themes) {
@@ -106,22 +103,26 @@ class Rendition extends Component {
       this.font(this.props.font);
     }
 
-    if (prevProps.width !== this.props.width ||
-        prevProps.height !== this.props.height) {
+    if (
+      prevProps.width !== this.props.width ||
+      prevProps.height !== this.props.height
+    ) {
       this.resize(this.props.width, this.props.height);
     }
   }
 
   load(bookUrl) {
-    if (!this._webviewLoaded) return;
+    if (!this._webviewLoaded) {
+      return;
+    }
 
-    __DEV__ && console.log("loading book: ", bookUrl);
+    __DEV__ && console.log('loading book: ', bookUrl);
 
     let config = {
-      "minSpreadWidth": this.props.minSpreadWidth || 815,
-      "flow": this.props.flow || "paginated",
-      "gap": this.props.gap,
-      "fullsize": true
+      minSpreadWidth: this.props.minSpreadWidth || 815,
+      flow: this.props.flow || 'paginated',
+      gap: this.props.gap,
+      fullsize: true,
     };
 
     if (this.props.stylesheet) {
@@ -148,7 +149,7 @@ class Rendition extends Component {
       config.resizeOnOrientationChange = this.props.resizeOnOrientationChange;
     }
 
-    this.sendToBridge("open", [bookUrl, config]);
+    this.sendToBridge('open', [bookUrl, config]);
 
     this.display(this.props.display);
 
@@ -170,16 +171,18 @@ class Rendition extends Component {
   }
 
   display(target) {
-    let spine = typeof target === "number" && target;
+    let spine = typeof target === 'number' && target;
 
-    if (!this._webviewLoaded) return;
+    if (!this._webviewLoaded) {
+      return;
+    }
 
     if (spine) {
-      this.sendToBridge("display", [{ "spine": spine}]);
+      this.sendToBridge('display', [{ spine: spine }]);
     } else if (target) {
-      this.sendToBridge("display", [{ "target": target}]);
+      this.sendToBridge('display', [{ target: target }]);
     } else {
-      this.sendToBridge("display");
+      this.sendToBridge('display');
     }
   }
 
@@ -187,85 +190,83 @@ class Rendition extends Component {
     if (!w || !h) {
       return;
     }
-    this.sendToBridge("resize", [w,h]);
+    this.sendToBridge('resize', [w, h]);
   }
 
   flow(f) {
-    this.sendToBridge("flow", [f]);
+    this.sendToBridge('flow', [f]);
   }
 
   themes(t) {
-    this.sendToBridge("themes", [t]);
+    this.sendToBridge('themes', [t]);
   }
 
   theme(t) {
-    this.sendToBridge("theme", [t]);
+    this.sendToBridge('theme', [t]);
   }
 
   font(f) {
-    this.sendToBridge("font", [f]);
+    this.sendToBridge('font', [f]);
   }
 
   fontSize(f) {
-    this.sendToBridge("fontSize", [f]);
+    this.sendToBridge('fontSize', [f]);
   }
 
   override(name, value, priority) {
-    this.sendToBridge("override", [name, value, priority]);
+    this.sendToBridge('override', [name, value, priority]);
   }
 
   gap(gap) {
-    this.sendToBridge("gap", [gap]);
+    this.sendToBridge('gap', [gap]);
   }
 
   setLocations(locations) {
     this.locations = locations;
     if (this.isReady) {
-      this.sendToBridge("setLocations", [this.locations]);
+      this.sendToBridge('setLocations', [this.locations]);
     }
   }
 
   reportLocation() {
     if (this.isReady) {
-      this.sendToBridge("reportLocation");
+      this.sendToBridge('reportLocation');
     }
   }
 
-  highlight (cfiRange, data, cb, className, style) {
-    this.sendToBridge("highlight", [cfiRange, data, cb, className,style]);
+  highlight(cfiRange, data, cb, className, style) {
+    this.sendToBridge('highlight', [cfiRange, data, cb, className, style]);
   }
 
-  underline (cfiRange, data) {
-    this.sendToBridge("underline", [cfiRange, data]);
+  underline(cfiRange, data) {
+    this.sendToBridge('underline', [cfiRange, data]);
   }
 
-  mark (cfiRange, data) {
-    this.sendToBridge("mark", [cfiRange, data]);
-	}
+  mark(cfiRange, data) {
+    this.sendToBridge('mark', [cfiRange, data]);
+  }
 
-  unhighlight (cfiRange) {
-    this.sendToBridge("removeAnnotation", [cfiRange, "highlight"]);
-	}
+  unhighlight(cfiRange) {
+    this.sendToBridge('removeAnnotation', [cfiRange, 'highlight']);
+  }
 
-	ununderline (cfiRange) {
-    this.sendToBridge("removeAnnotation", [cfiRange, "underline"]);
-	}
+  ununderline(cfiRange) {
+    this.sendToBridge('removeAnnotation', [cfiRange, 'underline']);
+  }
 
-	unmark (cfiRange) {
-    this.sendToBridge("removeAnnotation", [cfiRange, "mark"]);
-	}
+  unmark(cfiRange) {
+    this.sendToBridge('removeAnnotation', [cfiRange, 'mark']);
+  }
 
   next() {
-    this.sendToBridge("next");
+    this.sendToBridge('next');
   }
 
   prev() {
-    this.sendToBridge("prev");
+    this.sendToBridge('prev');
   }
 
-  destroy() {
-
-  }
+  destroy() {}
 
   postMessage(str) {
     if (this.refs.webviewbridge) {
@@ -277,7 +278,7 @@ class Rendition extends Component {
     var str = JSON.stringify({
       method: method,
       args: args,
-      promise: promiseId
+      promise: promiseId,
     });
 
     if (!this.refs.webviewbridge) {
@@ -297,19 +298,18 @@ class Rendition extends Component {
   _onBridgeMessage(e) {
     var msg = e.nativeEvent.data;
     var decoded;
-    if (typeof msg === "string") {
+    if (typeof msg === 'string') {
       decoded = JSON.parse(msg);
     } else {
       decoded = msg; // webkit may pass parsed objects
     }
-    var p;
 
     switch (decoded.method) {
-      case "log": {
+      case 'log': {
         console.log.apply(console.log, [decoded.value]);
         break;
       }
-      case "error": {
+      case 'error': {
         if (this.props.onError) {
           this.props.onError(decoded.value);
         } else {
@@ -317,67 +317,75 @@ class Rendition extends Component {
         }
         break;
       }
-      case "loaded": {
+      case 'loaded': {
         this._onWebViewLoaded();
         break;
       }
-      case "rendered": {
+      case 'rendered': {
         if (!this.state.loaded) {
-          this.setState({loaded: true});
+          this.setState({ loaded: true });
         }
         break;
       }
-      case "relocated": {
-        let {location} = decoded;
+      case 'relocated': {
+        let { location } = decoded;
         this._relocated(location);
         if (!this.state.loaded) {
-          this.setState({loaded: true});
+          this.setState({ loaded: true });
         }
         break;
       }
-      case "resized": {
-        let {size} = decoded;
-        console.log("resized", size.width, size.height);
+      case 'resized': {
+        let { size } = decoded;
+        console.log('resized', size.width, size.height);
         break;
       }
-      case "press": {
-        this.props.onPress && this.props.onPress(decoded.cfi, decoded.position, this);
+      case 'press': {
+        this.props.onPress &&
+          this.props.onPress(decoded.cfi, decoded.position, this);
         break;
       }
-      case "longpress": {
+      case 'longpress': {
         this.props.onLongPress && this.props.onLongPress(decoded.cfi, this);
         break;
       }
-      case "dblpress": {
-        this.props.onDblPress && this.props.onDblPress(decoded.cfi, decoded.position, decoded.imgSrc, this);
+      case 'dblpress': {
+        this.props.onDblPress &&
+          this.props.onDblPress(
+            decoded.cfi,
+            decoded.position,
+            decoded.imgSrc,
+            this,
+          );
         break;
       }
-      case "selected": {
-        let {cfiRange} = decoded;
+      case 'selected': {
+        let { cfiRange } = decoded;
         this._selected(cfiRange);
         break;
       }
-      case "markClicked": {
-        let {cfiRange, data} = decoded;
+      case 'markClicked': {
+        let { cfiRange, data } = decoded;
         this._markClicked(cfiRange, data);
         break;
       }
-      case "added": {
-        let {sectionIndex} = decoded;
+      case 'added': {
+        let { sectionIndex } = decoded;
         this.props.onViewAdded && this.props.onViewAdded(sectionIndex);
         break;
       }
-      case "removed": {
-        let {sectionIndex} = decoded;
-        this.props.beforeViewRemoved && this.props.beforeViewRemoved(sectionIndex);
+      case 'removed': {
+        let { sectionIndex } = decoded;
+        this.props.beforeViewRemoved &&
+          this.props.beforeViewRemoved(sectionIndex);
         break;
       }
-      case "ready": {
+      case 'ready': {
         this._ready();
         break;
       }
       default: {
-        console.log("msg", decoded);
+        console.log('msg', decoded);
       }
     }
   }
@@ -404,22 +412,28 @@ class Rendition extends Component {
   _ready() {
     this.isReady = true;
     if (this.locations) {
-      this.sendToBridge("setLocations", [this.locations]);
+      this.sendToBridge('setLocations', [this.locations]);
     }
     this.props.onDisplayed && this.props.onDisplayed();
   }
 
   render() {
     let loader = (
-      <TouchableOpacity onPress={() => this.props.onPress('')} style={styles.loadScreen}>
-        <View style={[styles.loadScreen, {
-            backgroundColor: this.props.backgroundColor || "#FFFFFF"
-          }]}>
-            <ActivityIndicator
-                color={this.props.color || "black"}
-                size={this.props.size || "large"}
-                style={{ flex: 1 }}
-              />
+      <TouchableOpacity
+        onPress={() => this.props.onPress('')}
+        style={styles.loadScreen}>
+        <View
+          style={[
+            styles.loadScreen,
+            {
+              backgroundColor: this.props.backgroundColor || '#FFFFFF',
+            },
+          ]}>
+          <ActivityIndicator
+            color={this.props.color || 'black'}
+            size={this.props.size || 'large'}
+            style={{ flex: 1 }}
+          />
         </View>
       </TouchableOpacity>
     );
@@ -429,27 +443,38 @@ class Rendition extends Component {
     }
 
     return (
-      <View ref="framer" style={[styles.container, {
-          maxWidth: this.props.width, maxHeight: this.props.height,
-          minWidth: this.props.width, minHeight: this.props.height
-        }]}>
+      <View
+        ref="framer"
+        style={[
+          styles.container,
+          {
+            maxWidth: this.props.width,
+            maxHeight: this.props.height,
+            minWidth: this.props.width,
+            minHeight: this.props.height,
+          },
+        ]}>
         <WebView
           ref="webviewbridge"
-          source={{html: EMBEDDED_HTML, baseUrl: this.props.url}}
-          style={[styles.manager, {
-            backgroundColor: this.props.backgroundColor || "#FFFFFF"
-          }]}
+          source={{ html: EMBEDDED_HTML, baseUrl: this.props.url }}
+          style={[
+            styles.manager,
+            {
+              backgroundColor: this.props.backgroundColor || '#000000',
+            },
+          ]}
           bounces={false}
           javaScriptEnabled={true}
           scrollEnabled={true}
-          pagingEnabled={this.props.flow === "paginated"}
+          pagingEnabled={this.props.flow === 'paginated'}
           onMessage={this._onBridgeMessage.bind(this)}
           contentInsetAdjustmentBehavior="never"
-          contentInset={{top: 0}}
+          contentInset={{ top: 0 }}
           automaticallyAdjustContentInsets={false}
           originWhitelist={['*']}
           allowsLinkPreview={false}
         />
+
         {!this.state.loaded ? loader : null}
       </View>
     );
@@ -459,7 +484,7 @@ class Rendition extends Component {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    flexDirection: "column",
+    flexDirection: 'column',
   },
   manager: {
     flex: 1,
@@ -467,23 +492,23 @@ const styles = StyleSheet.create({
   scrollContainer: {
     flex: 1,
     marginTop: 0,
-    flexDirection: "row",
-    flexWrap: "nowrap",
-    backgroundColor: "#F8F8F8",
+    flexDirection: 'row',
+    flexWrap: 'nowrap',
+    backgroundColor: '#F8F8F8',
   },
   rowContainer: {
     flex: 1,
   },
   loadScreen: {
-    position: "absolute",
+    position: 'absolute',
     top: 0,
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: "#fff",
-    justifyContent: "center",
-    alignItems: "center"
-  }
+    backgroundColor: '#fff',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
 });
 
 EventEmitter(Rendition.prototype);
