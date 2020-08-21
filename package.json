@@ -1,14 +1,17 @@
 {
   "name": "@maciejwojtas/epubjs-rn",
   "version": "0.1.5",
-  "repository": "https://github.com/futurepress/epubjs-rn",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/futurepress/epubjs-rn.git"
+  },
   "main": "./components/index.js",
   "scripts": {
     "start": "node EpubReader/node_modules/react-native/local-cli/cli.js start",
     "contents": "webpack --config contents/webpack.config.js",
-    "build": "./node_modules/.bin/babel src/ -d components/",
-    "watch": "./node_modules/.bin/babel src/ -d components/ -w",
-    "local": "./node_modules/.bin/gulp watch",
+    "build": "babel src/ -d components/",
+    "watch": "babel src/ -d components/ -w",
+    "local": "gulp watch",
     "prepublishOnly": "npm run build"
   },
   "license": "BSD-2-Clause",
@@ -28,7 +31,7 @@
     "react-native": "0.59.9",
     "react-native-static-server": "^0.4.2",
     "react-native-webview": "^5.12.0",
-    "react-native-zip-archive": "^4.1.1",
+    "@maciejwojtas/react-native-zip-archive": "5.0.5",
     "rn-fetch-blob": "^0.10.15",
     "stream": "0.0.2",
     "stream-browserify": "^2.0.2",
@@ -55,5 +58,11 @@
   "files": [
     "components",
     "package.json"
-  ]
+  ],
+  "description": "Epub.js React Native Components ================================",
+  "bugs": {
+    "url": "https://github.com/futurepress/epubjs-rn/issues"
+  },
+  "homepage": "https://github.com/futurepress/epubjs-rn#readme",
+  "author": ""
 }
