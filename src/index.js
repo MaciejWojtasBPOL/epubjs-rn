@@ -1,9 +1,5 @@
-import Epub from './Epub'
-import Rendition from './Rendition'
-import Streamer from './Streamer'
+import Epub from './Epub';
+import Rendition from './Rendition';
+import StreamerService from './services/StreamerService';
 
-export {
-  Epub,
-  Rendition,
-  Streamer
-}
+export { Epub, Rendition, StreamerService };
