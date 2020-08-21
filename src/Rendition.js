@@ -47,7 +47,8 @@ const EMBEDDED_HTML = `
 class Rendition extends Component {
   constructor(props) {
     super(props);
-
+    this.framer = React.createRef();
+    this.webviewbridge = React.createRef();
     this.state = {
       loaded: false,
       bridgeAssetPath: '',
@@ -269,8 +270,8 @@ class Rendition extends Component {
   destroy() {}
 
   postMessage(str) {
-    if (this.refs.webviewbridge) {
-      return this.refs.webviewbridge.postMessage(str);
+    if (this.webviewbridge) {
+      return this.webviewbridge.postMessage(str);
     }
   }
 
@@ -281,11 +282,11 @@ class Rendition extends Component {
       promise: promiseId,
     });
 
-    if (!this.refs.webviewbridge) {
+    if (!this.webviewbridge) {
       return;
     }
 
-    this.refs.webviewbridge.postMessage(str);
+    this.webviewbridge.postMessage(str);
   }
 
   _onWebViewLoaded() {
@@ -444,7 +445,7 @@ class Rendition extends Component {
 
     return (
       <View
-        ref="framer"
+        ref={this.framer}
         style={[
           styles.container,
           {
@@ -455,7 +456,7 @@ class Rendition extends Component {
           },
         ]}>
         <WebView
-          ref="webviewbridge"
+          ref={this.webviewbridge}
           source={{ html: EMBEDDED_HTML, baseUrl: this.props.url }}
           style={[
             styles.manager,
