@@ -1,6 +1,6 @@
 {
   "name": "@maciejwojtas/epubjs-rn",
-  "version": "0.1.7",
+  "version": "0.1.8",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/futurepress/epubjs-rn.git"
@@ -19,6 +19,7 @@
     "@babel/polyfill": "^7.4.4",
     "@lightbase/react-native-orientation": "^3.2.1",
     "@react-native-community/async-storage": "^1.5.0",
+    "@react-native-community/async-storage": "^1.5.0",
     "base-64": "^0.1.0",
     "buffer": "^5.2.1",
     "epubjs": "^0.3.84",
@@ -30,6 +31,7 @@
     "react": "16.8.3",
     "react-native": "0.59.9",
     "react-native-static-server": "^0.4.2",
+    "react-native-webview": "^5.12.0",
     "@maciejwojtas/react-native-zip-archive": "5.0.5",
     "rn-fetch-blob": "^0.10.15",
     "stream": "0.0.2",
